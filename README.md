@@ -4,7 +4,7 @@
 
 **Constructor Visual Interactivo de Workflows para GitHub Actions**
 
-[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-GitHub_Pages-32B8C6?style=for-the-badge)](https://partybrasil.github.io/GH-Actions-Workflow--Builder/)
+[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-GitHub_Pages-32B8C6?style=for-the-badge)](https://partybrasil.github.io/GH-Actions-Workflow-Builder/)
 [![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-Ready-success?style=for-the-badge&logo=github)](https://pages.github.com/)
 [![License MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 [![No Backend](https://img.shields.io/badge/Backend-None-blue?style=for-the-badge)](https://github.com)
@@ -39,7 +39,7 @@
 
 ## 🚀 Demo Online
 
-👉 **[https://partybrasil.github.io/GH-Actions-Workflow--Builder/](https://partybrasil.github.io/GH-Actions-Workflow--Builder/)**
+👉 **[https://partybrasil.github.io/GH-Actions-Workflow-Builder/](https://partybrasil.github.io/GH-Actions-Workflow-Builder/)**
 
 ---
 
@@ -53,8 +53,8 @@ Simplemente visita el demo online arriba. No requiere instalación.
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/partybrasil/GH-Actions-Workflow--Builder.git
-cd GH-Actions-Workflow--Builder
+git clone https://github.com/partybrasil/GH-Actions-Workflow-Builder.git
+cd GH-Actions-Workflow-Builder
 
 # 2. Iniciar servidor HTTP local (elige una opción)
 
@@ -86,7 +86,7 @@ php -S localhost:8000
 # Save
 
 # 3. Espera unos minutos
-# Tu app estará en: https://TU-USUARIO.github.io/GH-Actions-Workflow--Builder/
+# Tu app estará en: https://TU-USUARIO.github.io/GH-Actions-Workflow-Builder/
 ```
 
 ---
@@ -178,7 +178,7 @@ git push
 ## 📂 Estructura del Proyecto
 
 ```text
-GH-Actions-Workflow--Builder/
+GH-Actions-Workflow-Builder/
 ├── docs/                      # GitHub Pages root
 │   ├── index.html             # Aplicación principal
 │   ├── data/
@@ -285,7 +285,7 @@ Este proyecto está bajo la licencia MIT. Ver [LICENSE](LICENSE) para más detal
 
 ### 🚀 Desplegado con GitHub Pages
 
-**[Ver Demo Online →](https://partybrasil.github.io/GH-Actions-Workflow--Builder/)**
+**[Ver Demo Online →](https://partybrasil.github.io/GH-Actions-Workflow-Builder/)**
 
 ---
 
