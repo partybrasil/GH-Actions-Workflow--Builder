@@ -1,0 +1,2711 @@
+[
+  {
+    "id": "node-ci",
+    "name": "Node.js CI",
+    "category": "CI/CD",
+    "description": "Basic CI workflow for Node.js projects with testing",
+    "yaml": "name: Node.js CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    strategy:\n      matrix:\n        node-version: [18.x, 20.x]\n    steps:\n    - uses: actions/checkout@v4\n    - name: Use Node.js ${{ matrix.node-version }}\n      uses: actions/setup-node@v4\n      with:\n        node-version: ${{ matrix.node-version }}\n    - run: npm ci\n    - run: npm run build --if-present\n    - run: npm test",
+    "tags": [
+      "node",
+      "javascript",
+      "ci",
+      "test"
+    ]
+  },
+  {
+    "id": "python-ci",
+    "name": "Python CI",
+    "category": "CI/CD",
+    "description": "CI workflow for Python projects with pytest",
+    "yaml": "name: Python CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    strategy:\n      matrix:\n        python-version: ['3.9', '3.10', '3.11']\n    steps:\n    - uses: actions/checkout@v4\n    - name: Set up Python ${{ matrix.python-version }}\n      uses: actions/setup-python@v5\n      with:\n        python-version: ${{ matrix.python-version }}\n    - name: Install dependencies\n      run: |\n        python -m pip install --upgrade pip\n        pip install pytest\n        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi\n    - name: Test with pytest\n      run: pytest",
+    "tags": [
+      "python",
+      "pytest",
+      "ci",
+      "test"
+    ]
+  },
+  {
+    "id": "docker-build",
+    "name": "Docker Build & Push",
+    "category": "CI/CD",
+    "description": "Build and push Docker image to registry",
+    "yaml": "name: Docker Build and Push\n\non:\n  push:\n    branches: [ main ]\n    tags:\n      - 'v*'\n\njobs:\n  docker:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Set up Docker Buildx\n      uses: docker/setup-buildx-action@v3\n    - name: Login to DockerHub\n      uses: docker/login-action@v3\n      with:\n        username: ${{ secrets.DOCKERHUB_USERNAME }}\n        password: ${{ secrets.DOCKERHUB_TOKEN }}\n    - name: Build and push\n      uses: docker/build-push-action@v5\n      with:\n        push: true\n        tags: user/app:latest",
+    "tags": [
+      "docker",
+      "container",
+      "build",
+      "push"
+    ]
+  },
+  {
+    "id": "gh-pages-deploy",
+    "name": "Deploy to GitHub Pages",
+    "category": "Deploy",
+    "description": "Deploy static site to GitHub Pages",
+    "yaml": "name: Deploy to GitHub Pages\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read\n      pages: write\n      id-token: write\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup Pages\n      uses: actions/configure-pages@v4\n    - name: Upload artifact\n      uses: actions/upload-pages-artifact@v3\n      with:\n        path: './docs'\n    - name: Deploy to GitHub Pages\n      uses: actions/deploy-pages@v4",
+    "tags": [
+      "deploy",
+      "github-pages",
+      "static"
+    ]
+  },
+  {
+    "id": "npm-publish",
+    "name": "Publish to npm",
+    "category": "Deploy",
+    "description": "Publish npm package on release",
+    "yaml": "name: Publish to npm\n\non:\n  release:\n    types: [created]\n\njobs:\n  publish:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - uses: actions/setup-node@v4\n      with:\n        node-version: '20'\n        registry-url: 'https://registry.npmjs.org'\n    - run: npm ci\n    - run: npm test\n    - run: npm publish\n      env:\n        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}",
+    "tags": [
+      "npm",
+      "publish",
+      "release",
+      "deploy"
+    ]
+  },
+  {
+    "id": "jest-testing",
+    "name": "Jest Testing",
+    "category": "Testing",
+    "description": "Run Jest tests with coverage",
+    "yaml": "name: Jest Tests\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - uses: actions/setup-node@v4\n      with:\n        node-version: '20'\n    - run: npm ci\n    - run: npm test -- --coverage\n    - name: Upload coverage\n      uses: codecov/codecov-action@v3\n      with:\n        files: ./coverage/lcov.info",
+    "tags": [
+      "jest",
+      "testing",
+      "coverage",
+      "javascript"
+    ]
+  },
+  {
+    "id": "semantic-release",
+    "name": "Semantic Release",
+    "category": "Release",
+    "description": "Automated semantic versioning and release",
+    "yaml": "name: Release\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n      with:\n        fetch-depth: 0\n    - uses: actions/setup-node@v4\n      with:\n        node-version: '20'\n    - run: npm ci\n    - run: npx semantic-release\n      env:\n        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}",
+    "tags": [
+      "release",
+      "semantic-release",
+      "versioning"
+    ]
+  },
+  {
+    "id": "slack-notify",
+    "name": "Slack Notification",
+    "category": "Notify",
+    "description": "Send notification to Slack channel",
+    "yaml": "name: Slack Notification\n\non:\n  push:\n    branches: [ main ]\n  workflow_run:\n    workflows: [\"CI\"]\n    types: [completed]\n\njobs:\n  notify:\n    runs-on: ubuntu-latest\n    steps:\n    - name: Notify Slack\n      uses: slackapi/slack-github-action@v1\n      with:\n        webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}\n        payload: |\n          {\n            \"text\": \"Workflow ${{ github.workflow }} completed\",\n            \"status\": \"${{ job.status }}\"\n          }",
+    "tags": [
+      "slack",
+      "notification",
+      "notify"
+    ]
+  },
+  {
+    "id": "go-ci",
+    "name": "Go CI",
+    "category": "CI/CD",
+    "description": "CI workflow for Go projects",
+    "yaml": "name: Go CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Set up Go\n      uses: actions/setup-go@v5\n      with:\n        go-version: '1.21'\n    - name: Build\n      run: go build -v ./...\n    - name: Test\n      run: go test -v ./...",
+    "tags": [
+      "go",
+      "golang",
+      "ci",
+      "test"
+    ]
+  },
+  {
+    "id": "rust-ci",
+    "name": "Rust CI",
+    "category": "CI/CD",
+    "description": "CI workflow for Rust projects",
+    "yaml": "name: Rust CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup Rust\n      uses: actions-rs/toolchain@v1\n      with:\n        toolchain: stable\n    - name: Build\n      run: cargo build --verbose\n    - name: Run tests\n      run: cargo test --verbose",
+    "tags": [
+      "rust",
+      "cargo",
+      "ci",
+      "test"
+    ]
+  },
+  {
+    "id": "aws-deploy",
+    "name": "Deploy to AWS",
+    "category": "Deploy",
+    "description": "Deploy application to AWS using AWS CLI",
+    "yaml": "name: Deploy to AWS\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Configure AWS credentials\n      uses: aws-actions/configure-aws-credentials@v4\n      with:\n        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}\n        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}\n        aws-region: us-east-1\n    - name: Deploy to S3\n      run: aws s3 sync ./dist s3://my-bucket",
+    "tags": [
+      "aws",
+      "deploy",
+      "s3",
+      "cloud"
+    ]
+  },
+  {
+    "id": "azure-deploy",
+    "name": "Deploy to Azure",
+    "category": "Deploy",
+    "description": "Deploy to Azure Web App",
+    "yaml": "name: Deploy to Azure\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Login to Azure\n      uses: azure/login@v1\n      with:\n        creds: ${{ secrets.AZURE_CREDENTIALS }}\n    - name: Deploy to Azure Web App\n      uses: azure/webapps-deploy@v2\n      with:\n        app-name: 'my-app-name'\n        package: './dist'",
+    "tags": [
+      "azure",
+      "deploy",
+      "cloud"
+    ]
+  },
+  {
+    "id": "lint-eslint",
+    "name": "ESLint Check",
+    "category": "Testing",
+    "description": "Run ESLint for code quality",
+    "yaml": "name: ESLint\n\non: [push, pull_request]\n\njobs:\n  lint:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - uses: actions/setup-node@v4\n      with:\n        node-version: '20'\n    - run: npm ci\n    - run: npm run lint",
+    "tags": [
+      "eslint",
+      "lint",
+      "javascript",
+      "quality"
+    ]
+  },
+  {
+    "id": "codeql-analysis",
+    "name": "CodeQL Analysis",
+    "category": "Testing",
+    "description": "Security scanning with CodeQL",
+    "yaml": "name: CodeQL\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n  schedule:\n    - cron: '0 0 * * 1'\n\njobs:\n  analyze:\n    runs-on: ubuntu-latest\n    permissions:\n      security-events: write\n    steps:\n    - uses: actions/checkout@v4\n    - name: Initialize CodeQL\n      uses: github/codeql-action/init@v3\n      with:\n        languages: javascript\n    - name: Autobuild\n      uses: github/codeql-action/autobuild@v3\n    - name: Perform CodeQL Analysis\n      uses: github/codeql-action/analyze@v3",
+    "tags": [
+      "codeql",
+      "security",
+      "analysis",
+      "scanning"
+    ]
+  },
+  {
+    "id": "discord-notify",
+    "name": "Discord Notification",
+    "category": "Notify",
+    "description": "Send notification to Discord channel",
+    "yaml": "name: Discord Notification\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  notify:\n    runs-on: ubuntu-latest\n    steps:\n    - name: Discord notification\n      uses: Ilshidur/action-discord@master\n      env:\n        DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}\n      with:\n        args: 'Build completed for {{ EVENT_PAYLOAD.repository.full_name }}'",
+    "tags": [
+      "discord",
+      "notification",
+      "notify"
+    ]
+  },
+  {
+    "id": "java-maven",
+    "name": "Java Maven Build",
+    "category": "CI/CD",
+    "description": "Build Java project with Maven",
+    "yaml": "name: Java Maven CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Set up JDK 17\n      uses: actions/setup-java@v4\n      with:\n        java-version: '17'\n        distribution: 'temurin'\n    - name: Build with Maven\n      run: mvn clean install",
+    "tags": [
+      "java",
+      "maven",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "terraform-plan",
+    "name": "Terraform Plan",
+    "category": "CI/CD",
+    "description": "Run Terraform plan for infrastructure",
+    "yaml": "name: Terraform\n\non:\n  pull_request:\n    branches: [ main ]\n\njobs:\n  terraform:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup Terraform\n      uses: hashicorp/setup-terraform@v3\n    - name: Terraform Init\n      run: terraform init\n    - name: Terraform Plan\n      run: terraform plan",
+    "tags": [
+      "terraform",
+      "infrastructure",
+      "iac",
+      "plan"
+    ]
+  },
+  {
+    "id": "ruby-ci",
+    "name": "Ruby CI",
+    "category": "CI/CD",
+    "description": "CI workflow for Ruby projects",
+    "yaml": "name: Ruby CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Set up Ruby\n      uses: ruby/setup-ruby@v1\n      with:\n        ruby-version: '3.2'\n        bundler-cache: true\n    - name: Run tests\n      run: bundle exec rspec",
+    "tags": [
+      "ruby",
+      "rspec",
+      "ci",
+      "test"
+    ]
+  },
+  {
+    "id": "pr-labeler",
+    "name": "PR Auto Labeler",
+    "category": "Custom",
+    "description": "Automatically label pull requests",
+    "yaml": "name: PR Labeler\n\non:\n  pull_request:\n    types: [opened, synchronize]\n\njobs:\n  label:\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read\n      pull-requests: write\n    steps:\n    - uses: actions/labeler@v5\n      with:\n        repo-token: ${{ secrets.GITHUB_TOKEN }}",
+    "tags": [
+      "pr",
+      "labels",
+      "automation"
+    ]
+  },
+  {
+    "id": "stale-issues",
+    "name": "Close Stale Issues",
+    "category": "Custom",
+    "description": "Mark and close stale issues and PRs",
+    "yaml": "name: Close Stale Issues\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n\njobs:\n  stale:\n    runs-on: ubuntu-latest\n    permissions:\n      issues: write\n      pull-requests: write\n    steps:\n    - uses: actions/stale@v9\n      with:\n        stale-issue-message: 'This issue is stale'\n        stale-pr-message: 'This PR is stale'\n        days-before-stale: 60\n        days-before-close: 7",
+    "tags": [
+      "stale",
+      "issues",
+      "automation",
+      "maintenance"
+    ]
+  },
+  {
+    "id": "dependabot-auto-merge",
+    "name": "Dependabot Auto Merge",
+    "category": "Custom",
+    "description": "Auto-merge Dependabot PRs",
+    "yaml": "name: Dependabot Auto Merge\n\non:\n  pull_request:\n    branches: [ main ]\n\njobs:\n  auto-merge:\n    runs-on: ubuntu-latest\n    if: github.actor == 'dependabot[bot]'\n    steps:\n    - name: Enable auto-merge\n      run: gh pr merge --auto --squash \"$PR_URL\"\n      env:\n        PR_URL: ${{github.event.pull_request.html_url}}\n        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}",
+    "tags": [
+      "dependabot",
+      "automation",
+      "merge"
+    ]
+  },
+  {
+    "id": "php-ci",
+    "name": "PHP CI",
+    "category": "CI/CD",
+    "description": "CI workflow for PHP projects with PHPUnit",
+    "yaml": "name: PHP CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup PHP\n      uses: shivammathur/setup-php@v2\n      with:\n        php-version: '8.2'\n    - name: Install dependencies\n      run: composer install\n    - name: Run tests\n      run: vendor/bin/phpunit",
+    "tags": [
+      "php",
+      "phpunit",
+      "ci",
+      "test"
+    ]
+  },
+  {
+    "id": "dotnet-ci",
+    "name": ".NET CI",
+    "category": "CI/CD",
+    "description": "CI workflow for .NET projects",
+    "yaml": "name: .NET CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup .NET\n      uses: actions/setup-dotnet@v4\n      with:\n        dotnet-version: '8.0.x'\n    - name: Restore dependencies\n      run: dotnet restore\n    - name: Build\n      run: dotnet build --no-restore\n    - name: Test\n      run: dotnet test --no-build",
+    "tags": [
+      "dotnet",
+      "csharp",
+      "ci",
+      "test"
+    ]
+  },
+  {
+    "id": "android-build",
+    "name": "Android Build",
+    "category": "CI/CD",
+    "description": "Build Android application",
+    "yaml": "name: Android CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Set up JDK\n      uses: actions/setup-java@v4\n      with:\n        java-version: '17'\n        distribution: 'temurin'\n    - name: Grant execute permission\n      run: chmod +x gradlew\n    - name: Build with Gradle\n      run: ./gradlew build",
+    "tags": [
+      "android",
+      "gradle",
+      "mobile",
+      "build"
+    ]
+  },
+  {
+    "id": "ios-build",
+    "name": "iOS Build",
+    "category": "CI/CD",
+    "description": "Build iOS application with Xcode",
+    "yaml": "name: iOS CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: macos-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Select Xcode\n      run: sudo xcode-select -s /Applications/Xcode_15.0.app\n    - name: Build\n      run: xcodebuild -scheme MyApp -destination 'platform=iOS Simulator,name=iPhone 15' build",
+    "tags": [
+      "ios",
+      "xcode",
+      "mobile",
+      "build"
+    ]
+  },
+  {
+    "id": "flutter-ci",
+    "name": "Flutter CI",
+    "category": "CI/CD",
+    "description": "CI workflow for Flutter projects",
+    "yaml": "name: Flutter CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup Flutter\n      uses: subosito/flutter-action@v2\n      with:\n        flutter-version: '3.16.0'\n    - name: Install dependencies\n      run: flutter pub get\n    - name: Analyze\n      run: flutter analyze\n    - name: Test\n      run: flutter test",
+    "tags": [
+      "flutter",
+      "dart",
+      "mobile",
+      "ci"
+    ]
+  },
+  {
+    "id": "react-native-ci",
+    "name": "React Native CI",
+    "category": "CI/CD",
+    "description": "CI for React Native projects",
+    "yaml": "name: React Native CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - uses: actions/setup-node@v4\n      with:\n        node-version: '20'\n    - run: npm ci\n    - run: npm test\n    - run: npm run lint",
+    "tags": [
+      "react-native",
+      "mobile",
+      "javascript",
+      "ci"
+    ]
+  },
+  {
+    "id": "kotlin-ci",
+    "name": "Kotlin CI",
+    "category": "CI/CD",
+    "description": "CI workflow for Kotlin projects",
+    "yaml": "name: Kotlin CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Set up JDK\n      uses: actions/setup-java@v4\n      with:\n        java-version: '17'\n        distribution: 'temurin'\n    - name: Build with Gradle\n      run: ./gradlew build",
+    "tags": [
+      "kotlin",
+      "gradle",
+      "ci",
+      "test"
+    ]
+  },
+  {
+    "id": "swift-ci",
+    "name": "Swift CI",
+    "category": "CI/CD",
+    "description": "CI workflow for Swift projects",
+    "yaml": "name: Swift CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: macos-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Build\n      run: swift build -v\n    - name: Test\n      run: swift test -v",
+    "tags": [
+      "swift",
+      "ios",
+      "macos",
+      "ci"
+    ]
+  },
+  {
+    "id": "scala-ci",
+    "name": "Scala CI",
+    "category": "CI/CD",
+    "description": "CI workflow for Scala projects with sbt",
+    "yaml": "name: Scala CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup JDK\n      uses: actions/setup-java@v4\n      with:\n        java-version: '17'\n        distribution: 'temurin'\n    - name: Run tests\n      run: sbt test",
+    "tags": [
+      "scala",
+      "sbt",
+      "ci",
+      "test"
+    ]
+  },
+  {
+    "id": "elixir-ci",
+    "name": "Elixir CI",
+    "category": "CI/CD",
+    "description": "CI workflow for Elixir projects",
+    "yaml": "name: Elixir CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup Elixir\n      uses: erlef/setup-beam@v1\n      with:\n        elixir-version: '1.15'\n        otp-version: '26'\n    - run: mix deps.get\n    - run: mix test",
+    "tags": [
+      "elixir",
+      "erlang",
+      "ci",
+      "test"
+    ]
+  },
+  {
+    "id": "haskell-ci",
+    "name": "Haskell CI",
+    "category": "CI/CD",
+    "description": "CI workflow for Haskell projects",
+    "yaml": "name: Haskell CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup Haskell\n      uses: haskell/actions/setup@v2\n      with:\n        ghc-version: '9.4'\n        cabal-version: '3.10'\n    - run: cabal build\n    - run: cabal test",
+    "tags": [
+      "haskell",
+      "cabal",
+      "ci",
+      "test"
+    ]
+  },
+  {
+    "id": "vercel-deploy",
+    "name": "Deploy to Vercel",
+    "category": "Deploy",
+    "description": "Deploy application to Vercel",
+    "yaml": "name: Deploy to Vercel\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy to Vercel\n      uses: amondnet/vercel-action@v25\n      with:\n        vercel-token: ${{ secrets.VERCEL_TOKEN }}\n        vercel-org-id: ${{ secrets.ORG_ID }}\n        vercel-project-id: ${{ secrets.PROJECT_ID }}\n        vercel-args: '--prod'",
+    "tags": [
+      "vercel",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "netlify-deploy",
+    "name": "Deploy to Netlify",
+    "category": "Deploy",
+    "description": "Deploy site to Netlify",
+    "yaml": "name: Deploy to Netlify\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Build\n      run: npm run build\n    - name: Deploy to Netlify\n      uses: nwtgck/actions-netlify@v2\n      with:\n        publish-dir: './dist'\n        production-deploy: true\n      env:\n        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}\n        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}",
+    "tags": [
+      "netlify",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "firebase-deploy",
+    "name": "Deploy to Firebase",
+    "category": "Deploy",
+    "description": "Deploy to Firebase Hosting",
+    "yaml": "name: Deploy to Firebase\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Build\n      run: npm run build\n    - name: Deploy to Firebase\n      uses: FirebaseExtended/action-hosting-deploy@v0\n      with:\n        repoToken: '${{ secrets.GITHUB_TOKEN }}'\n        firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'\n        channelId: live\n        projectId: my-project",
+    "tags": [
+      "firebase",
+      "deploy",
+      "hosting",
+      "google"
+    ]
+  },
+  {
+    "id": "heroku-deploy",
+    "name": "Deploy to Heroku",
+    "category": "Deploy",
+    "description": "Deploy application to Heroku",
+    "yaml": "name: Deploy to Heroku\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy to Heroku\n      uses: akhileshns/heroku-deploy@v3.12.14\n      with:\n        heroku_api_key: ${{ secrets.HEROKU_API_KEY }}\n        heroku_app_name: 'my-app'\n        heroku_email: 'email@example.com'",
+    "tags": [
+      "heroku",
+      "deploy",
+      "paas"
+    ]
+  },
+  {
+    "id": "gcp-deploy",
+    "name": "Deploy to Google Cloud",
+    "category": "Deploy",
+    "description": "Deploy to Google Cloud Platform",
+    "yaml": "name: Deploy to GCP\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup Cloud SDK\n      uses: google-github-actions/setup-gcloud@v2\n      with:\n        service_account_key: ${{ secrets.GCP_SA_KEY }}\n        project_id: ${{ secrets.GCP_PROJECT_ID }}\n    - name: Deploy\n      run: gcloud app deploy",
+    "tags": [
+      "gcp",
+      "google-cloud",
+      "deploy"
+    ]
+  },
+  {
+    "id": "digitalocean-deploy",
+    "name": "Deploy to DigitalOcean",
+    "category": "Deploy",
+    "description": "Deploy to DigitalOcean App Platform",
+    "yaml": "name: Deploy to DigitalOcean\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy to DO\n      uses: digitalocean/app_action@main\n      with:\n        app_name: my-app\n        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}",
+    "tags": [
+      "digitalocean",
+      "deploy",
+      "cloud"
+    ]
+  },
+  {
+    "id": "cloudflare-pages",
+    "name": "Deploy to Cloudflare Pages",
+    "category": "Deploy",
+    "description": "Deploy static site to Cloudflare Pages",
+    "yaml": "name: Deploy to Cloudflare Pages\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Build\n      run: npm run build\n    - name: Publish to Cloudflare\n      uses: cloudflare/pages-action@v1\n      with:\n        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}\n        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}\n        projectName: my-project\n        directory: dist",
+    "tags": [
+      "cloudflare",
+      "pages",
+      "deploy",
+      "cdn"
+    ]
+  },
+  {
+    "id": "pypi-publish",
+    "name": "Publish to PyPI",
+    "category": "Deploy",
+    "description": "Publish Python package to PyPI",
+    "yaml": "name: Publish to PyPI\n\non:\n  release:\n    types: [created]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Set up Python\n      uses: actions/setup-python@v5\n      with:\n        python-version: '3.11'\n    - name: Install dependencies\n      run: |\n        pip install build twine\n    - name: Build package\n      run: python -m build\n    - name: Publish to PyPI\n      env:\n        TWINE_USERNAME: __token__\n        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}\n      run: twine upload dist/*",
+    "tags": [
+      "pypi",
+      "python",
+      "publish",
+      "package"
+    ]
+  },
+  {
+    "id": "docker-hub-publish",
+    "name": "Publish to Docker Hub",
+    "category": "Deploy",
+    "description": "Build and publish Docker image to Docker Hub",
+    "yaml": "name: Publish to Docker Hub\n\non:\n  push:\n    tags:\n      - 'v*'\n\njobs:\n  docker:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Docker meta\n      id: meta\n      uses: docker/metadata-action@v5\n      with:\n        images: username/repository\n    - name: Login to Docker Hub\n      uses: docker/login-action@v3\n      with:\n        username: ${{ secrets.DOCKERHUB_USERNAME }}\n        password: ${{ secrets.DOCKERHUB_TOKEN }}\n    - name: Build and push\n      uses: docker/build-push-action@v5\n      with:\n        push: true\n        tags: ${{ steps.meta.outputs.tags }}",
+    "tags": [
+      "docker",
+      "dockerhub",
+      "publish",
+      "container"
+    ]
+  },
+  {
+    "id": "pytest-coverage",
+    "name": "Pytest with Coverage",
+    "category": "Testing",
+    "description": "Run pytest with code coverage reporting",
+    "yaml": "name: Pytest Coverage\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Set up Python\n      uses: actions/setup-python@v5\n      with:\n        python-version: '3.11'\n    - name: Install dependencies\n      run: |\n        pip install pytest pytest-cov\n        pip install -r requirements.txt\n    - name: Run tests with coverage\n      run: pytest --cov=. --cov-report=xml\n    - name: Upload coverage\n      uses: codecov/codecov-action@v3",
+    "tags": [
+      "pytest",
+      "python",
+      "coverage",
+      "testing"
+    ]
+  },
+  {
+    "id": "mocha-test",
+    "name": "Mocha Testing",
+    "category": "Testing",
+    "description": "Run Mocha tests for Node.js",
+    "yaml": "name: Mocha Tests\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - uses: actions/setup-node@v4\n      with:\n        node-version: '20'\n    - run: npm ci\n    - run: npm test",
+    "tags": [
+      "mocha",
+      "testing",
+      "javascript",
+      "nodejs"
+    ]
+  },
+  {
+    "id": "rspec-test",
+    "name": "RSpec Testing",
+    "category": "Testing",
+    "description": "Run RSpec tests for Ruby",
+    "yaml": "name: RSpec Tests\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Set up Ruby\n      uses: ruby/setup-ruby@v1\n      with:\n        ruby-version: '3.2'\n        bundler-cache: true\n    - name: Run RSpec\n      run: bundle exec rspec --format documentation",
+    "tags": [
+      "rspec",
+      "ruby",
+      "testing"
+    ]
+  },
+  {
+    "id": "cypress-e2e",
+    "name": "Cypress E2E Testing",
+    "category": "Testing",
+    "description": "Run Cypress end-to-end tests",
+    "yaml": "name: Cypress Tests\n\non: [push, pull_request]\n\njobs:\n  cypress:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Cypress run\n      uses: cypress-io/github-action@v6\n      with:\n        build: npm run build\n        start: npm start\n        wait-on: 'http://localhost:3000'",
+    "tags": [
+      "cypress",
+      "e2e",
+      "testing",
+      "javascript"
+    ]
+  },
+  {
+    "id": "playwright-test",
+    "name": "Playwright Testing",
+    "category": "Testing",
+    "description": "Run Playwright end-to-end tests",
+    "yaml": "name: Playwright Tests\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - uses: actions/setup-node@v4\n      with:\n        node-version: '20'\n    - name: Install dependencies\n      run: npm ci\n    - name: Install Playwright\n      run: npx playwright install --with-deps\n    - name: Run tests\n      run: npx playwright test",
+    "tags": [
+      "playwright",
+      "e2e",
+      "testing",
+      "javascript"
+    ]
+  },
+  {
+    "id": "selenium-test",
+    "name": "Selenium Testing",
+    "category": "Testing",
+    "description": "Run Selenium browser tests",
+    "yaml": "name: Selenium Tests\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Set up Python\n      uses: actions/setup-python@v5\n      with:\n        python-version: '3.11'\n    - name: Install dependencies\n      run: |\n        pip install selenium pytest\n        pip install -r requirements.txt\n    - name: Run Selenium tests\n      run: pytest tests/selenium/",
+    "tags": [
+      "selenium",
+      "e2e",
+      "testing",
+      "browser"
+    ]
+  },
+  {
+    "id": "k6-load-test",
+    "name": "K6 Load Testing",
+    "category": "Testing",
+    "description": "Run K6 performance tests",
+    "yaml": "name: K6 Load Test\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  k6_load_test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run k6 local test\n      uses: grafana/k6-action@v0.3.1\n      with:\n        filename: test/load-test.js",
+    "tags": [
+      "k6",
+      "load-testing",
+      "performance"
+    ]
+  },
+  {
+    "id": "lighthouse-ci",
+    "name": "Lighthouse CI",
+    "category": "Testing",
+    "description": "Run Lighthouse performance audit",
+    "yaml": "name: Lighthouse CI\n\non: [push, pull_request]\n\njobs:\n  lhci:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - uses: actions/setup-node@v4\n      with:\n        node-version: '20'\n    - run: npm ci\n    - run: npm run build\n    - name: Lighthouse CI\n      uses: treosh/lighthouse-ci-action@v10\n      with:\n        urls: |\n          http://localhost:3000\n        uploadArtifacts: true",
+    "tags": [
+      "lighthouse",
+      "performance",
+      "audit",
+      "testing"
+    ]
+  },
+  {
+    "id": "security-scan",
+    "name": "Security Vulnerability Scan",
+    "category": "Testing",
+    "description": "Scan for security vulnerabilities",
+    "yaml": "name: Security Scan\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n  schedule:\n    - cron: '0 0 * * 0'\n\njobs:\n  security:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run Trivy vulnerability scanner\n      uses: aquasecurity/trivy-action@master\n      with:\n        scan-type: 'fs'\n        scan-ref: '.'\n        format: 'sarif'\n        output: 'trivy-results.sarif'\n    - name: Upload results\n      uses: github/codeql-action/upload-sarif@v3\n      with:\n        sarif_file: 'trivy-results.sarif'",
+    "tags": [
+      "security",
+      "vulnerability",
+      "scan",
+      "trivy"
+    ]
+  },
+  {
+    "id": "snyk-security",
+    "name": "Snyk Security Scan",
+    "category": "Testing",
+    "description": "Scan dependencies with Snyk",
+    "yaml": "name: Snyk Security\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  security:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run Snyk\n      uses: snyk/actions/node@master\n      env:\n        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}",
+    "tags": [
+      "snyk",
+      "security",
+      "dependencies",
+      "scan"
+    ]
+  },
+  {
+    "id": "github-release",
+    "name": "Create GitHub Release",
+    "category": "Release",
+    "description": "Create GitHub release with changelog",
+    "yaml": "name: Create Release\n\non:\n  push:\n    tags:\n      - 'v*'\n\njobs:\n  release:\n    runs-on: ubuntu-latest\n    permissions:\n      contents: write\n    steps:\n    - uses: actions/checkout@v4\n      with:\n        fetch-depth: 0\n    - name: Generate changelog\n      id: changelog\n      uses: metcalfc/changelog-generator@v4\n      with:\n        myToken: ${{ secrets.GITHUB_TOKEN }}\n    - name: Create Release\n      uses: softprops/action-gh-release@v1\n      with:\n        body: ${{ steps.changelog.outputs.changelog }}",
+    "tags": [
+      "release",
+      "github",
+      "changelog"
+    ]
+  },
+  {
+    "id": "tag-release",
+    "name": "Auto Tag Release",
+    "category": "Release",
+    "description": "Automatically create tags based on commits",
+    "yaml": "name: Auto Tag\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  tag:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n      with:\n        fetch-depth: 0\n    - name: Bump version and push tag\n      uses: anothrNick/github-tag-action@1.67.0\n      env:\n        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n        WITH_V: true\n        DEFAULT_BUMP: patch",
+    "tags": [
+      "tag",
+      "release",
+      "versioning",
+      "automation"
+    ]
+  },
+  {
+    "id": "changelog-gen",
+    "name": "Generate Changelog",
+    "category": "Release",
+    "description": "Auto-generate changelog from commits",
+    "yaml": "name: Generate Changelog\n\non:\n  push:\n    tags:\n      - 'v*'\n\njobs:\n  changelog:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n      with:\n        fetch-depth: 0\n    - name: Generate changelog\n      uses: charmixer/auto-changelog-action@v1\n      with:\n        token: ${{ secrets.GITHUB_TOKEN }}\n    - name: Commit changelog\n      uses: stefanzweifel/git-auto-commit-action@v5\n      with:\n        commit_message: 'docs: update CHANGELOG'\n        file_pattern: CHANGELOG.md",
+    "tags": [
+      "changelog",
+      "release",
+      "documentation"
+    ]
+  },
+  {
+    "id": "draft-release",
+    "name": "Draft Release",
+    "category": "Release",
+    "description": "Create draft release for review",
+    "yaml": "name: Draft Release\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  update_release_draft:\n    runs-on: ubuntu-latest\n    permissions:\n      contents: write\n    steps:\n    - uses: release-drafter/release-drafter@v5\n      env:\n        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}",
+    "tags": [
+      "draft",
+      "release",
+      "automation"
+    ]
+  },
+  {
+    "id": "email-notify",
+    "name": "Email Notification",
+    "category": "Notify",
+    "description": "Send email notifications",
+    "yaml": "name: Email Notification\n\non:\n  workflow_run:\n    workflows: [\"CI\"]\n    types: [completed]\n\njobs:\n  notify:\n    runs-on: ubuntu-latest\n    steps:\n    - name: Send email\n      uses: dawidd6/action-send-mail@v3\n      with:\n        server_address: smtp.gmail.com\n        server_port: 465\n        username: ${{ secrets.EMAIL_USERNAME }}\n        password: ${{ secrets.EMAIL_PASSWORD }}\n        subject: Workflow ${{ github.workflow }} completed\n        body: Build completed with status ${{ job.status }}\n        to: team@example.com\n        from: GitHub Actions",
+    "tags": [
+      "email",
+      "notification",
+      "notify"
+    ]
+  },
+  {
+    "id": "telegram-notify",
+    "name": "Telegram Notification",
+    "category": "Notify",
+    "description": "Send notification to Telegram",
+    "yaml": "name: Telegram Notification\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  notify:\n    runs-on: ubuntu-latest\n    steps:\n    - name: Send Telegram message\n      uses: appleboy/telegram-action@master\n      with:\n        to: ${{ secrets.TELEGRAM_CHAT_ID }}\n        token: ${{ secrets.TELEGRAM_BOT_TOKEN }}\n        message: |\n          ${{ github.actor }} pushed to ${{ github.repository }}\n          Commit: ${{ github.event.head_commit.message }}",
+    "tags": [
+      "telegram",
+      "notification",
+      "notify"
+    ]
+  },
+  {
+    "id": "msteams-notify",
+    "name": "MS Teams Notification",
+    "category": "Notify",
+    "description": "Send notification to Microsoft Teams",
+    "yaml": "name: MS Teams Notification\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  notify:\n    runs-on: ubuntu-latest\n    steps:\n    - name: Notify MS Teams\n      uses: jdcargile/ms-teams-notification@v1.3\n      with:\n        github-token: ${{ secrets.GITHUB_TOKEN }}\n        ms-teams-webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}\n        notification-summary: Build completed\n        notification-color: 17a2b8",
+    "tags": [
+      "teams",
+      "microsoft",
+      "notification",
+      "notify"
+    ]
+  },
+  {
+    "id": "twitter-post",
+    "name": "Twitter Post",
+    "category": "Notify",
+    "description": "Post to Twitter on release",
+    "yaml": "name: Tweet on Release\n\non:\n  release:\n    types: [published]\n\njobs:\n  tweet:\n    runs-on: ubuntu-latest\n    steps:\n    - name: Post tweet\n      uses: ethomson/send-tweet-action@v1\n      with:\n        status: |\n          \ud83d\ude80 New release ${{ github.event.release.tag_name }} is out!\n          Check it out: ${{ github.event.release.html_url }}\n        consumer-key: ${{ secrets.TWITTER_CONSUMER_API_KEY }}\n        consumer-secret: ${{ secrets.TWITTER_CONSUMER_API_SECRET }}\n        access-token: ${{ secrets.TWITTER_ACCESS_TOKEN }}\n        access-token-secret: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}",
+    "tags": [
+      "twitter",
+      "social",
+      "notification",
+      "release"
+    ]
+  },
+  {
+    "id": "jira-comment",
+    "name": "JIRA Comment",
+    "category": "Notify",
+    "description": "Add comment to JIRA ticket",
+    "yaml": "name: JIRA Comment\n\non:\n  pull_request:\n    types: [opened, closed]\n\njobs:\n  comment:\n    runs-on: ubuntu-latest\n    steps:\n    - name: Comment on JIRA\n      uses: atlassian/gajira-comment@v3\n      with:\n        issue: ${{ github.event.pull_request.title }}\n        comment: |\n          PR ${{ github.event.pull_request.html_url }} \n          Status: ${{ github.event.action }}\n      env:\n        JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}\n        JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}\n        JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}",
+    "tags": [
+      "jira",
+      "notification",
+      "integration"
+    ]
+  },
+  {
+    "id": "auto-assign-pr",
+    "name": "Auto Assign PR",
+    "category": "Custom",
+    "description": "Automatically assign PR reviewers",
+    "yaml": "name: Auto Assign\n\non:\n  pull_request:\n    types: [opened, ready_for_review]\n\njobs:\n  add-reviews:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: kentaro-m/auto-assign-action@v1.2.5\n      with:\n        repo-token: ${{ secrets.GITHUB_TOKEN }}",
+    "tags": [
+      "pr",
+      "assign",
+      "automation",
+      "review"
+    ]
+  },
+  {
+    "id": "pr-size-labeler",
+    "name": "PR Size Labeler",
+    "category": "Custom",
+    "description": "Label PRs by size",
+    "yaml": "name: PR Size Labeler\n\non:\n  pull_request:\n    types: [opened, synchronize]\n\njobs:\n  size-label:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: codelytv/pr-size-labeler@v1\n      with:\n        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n        xs_label: 'size/XS'\n        xs_max_size: 10\n        s_label: 'size/S'\n        s_max_size: 100\n        m_label: 'size/M'\n        m_max_size: 500\n        l_label: 'size/L'\n        l_max_size: 1000\n        xl_label: 'size/XL'",
+    "tags": [
+      "pr",
+      "labels",
+      "size",
+      "automation"
+    ]
+  },
+  {
+    "id": "greetings",
+    "name": "Greet First Time Contributors",
+    "category": "Custom",
+    "description": "Welcome first-time contributors",
+    "yaml": "name: Greetings\n\non:\n  issues:\n    types: [opened]\n  pull_request_target:\n    types: [opened]\n\njobs:\n  greeting:\n    runs-on: ubuntu-latest\n    permissions:\n      issues: write\n      pull-requests: write\n    steps:\n    - uses: actions/first-interaction@v1\n      with:\n        repo-token: ${{ secrets.GITHUB_TOKEN }}\n        issue-message: 'Thanks for opening your first issue! \ud83c\udf89'\n        pr-message: 'Thanks for opening your first PR! \ud83d\ude80'",
+    "tags": [
+      "welcome",
+      "greetings",
+      "community",
+      "automation"
+    ]
+  },
+  {
+    "id": "lock-threads",
+    "name": "Lock Inactive Threads",
+    "category": "Custom",
+    "description": "Lock inactive issues and PRs",
+    "yaml": "name: Lock Threads\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n\njobs:\n  lock:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: dessant/lock-threads@v4\n      with:\n        github-token: ${{ secrets.GITHUB_TOKEN }}\n        issue-inactive-days: '365'\n        pr-inactive-days: '365'",
+    "tags": [
+      "lock",
+      "threads",
+      "maintenance",
+      "automation"
+    ]
+  },
+  {
+    "id": "comment-on-pr",
+    "name": "Comment on PR",
+    "category": "Custom",
+    "description": "Add automated comment to PR",
+    "yaml": "name: Comment on PR\n\non:\n  pull_request:\n    types: [opened]\n\njobs:\n  comment:\n    runs-on: ubuntu-latest\n    permissions:\n      pull-requests: write\n    steps:\n    - name: Add comment\n      uses: actions/github-script@v7\n      with:\n        script: |\n          github.rest.issues.createComment({\n            issue_number: context.issue.number,\n            owner: context.repo.owner,\n            repo: context.repo.repo,\n            body: '\ud83d\udc4b Thanks for opening this PR!'\n          })",
+    "tags": [
+      "pr",
+      "comment",
+      "automation"
+    ]
+  },
+  {
+    "id": "close-issues",
+    "name": "Close Invalid Issues",
+    "category": "Custom",
+    "description": "Close issues based on criteria",
+    "yaml": "name: Close Invalid Issues\n\non:\n  issues:\n    types: [opened]\n\njobs:\n  close-invalid:\n    runs-on: ubuntu-latest\n    permissions:\n      issues: write\n    steps:\n    - uses: actions/github-script@v7\n      with:\n        script: |\n          const issue = context.payload.issue;\n          if (issue.body.length < 50) {\n            await github.rest.issues.createComment({\n              issue_number: issue.number,\n              owner: context.repo.owner,\n              repo: context.repo.repo,\n              body: 'This issue is being closed due to insufficient information.'\n            });\n            await github.rest.issues.update({\n              issue_number: issue.number,\n              owner: context.repo.owner,\n              repo: context.repo.repo,\n              state: 'closed'\n            });\n          }",
+    "tags": [
+      "issues",
+      "validation",
+      "automation",
+      "close"
+    ]
+  },
+  {
+    "id": "issue-to-project",
+    "name": "Add Issue to Project",
+    "category": "Custom",
+    "description": "Automatically add issues to project board",
+    "yaml": "name: Add to Project\n\non:\n  issues:\n    types: [opened]\n\njobs:\n  add-to-project:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/add-to-project@v0.5.0\n      with:\n        project-url: https://github.com/users/username/projects/1\n        github-token: ${{ secrets.PROJECT_TOKEN }}",
+    "tags": [
+      "issues",
+      "project",
+      "board",
+      "automation"
+    ]
+  },
+  {
+    "id": "sync-labels",
+    "name": "Sync Labels",
+    "category": "Custom",
+    "description": "Sync labels across repositories",
+    "yaml": "name: Sync Labels\n\non:\n  push:\n    branches: [ main ]\n    paths:\n      - '.github/labels.yml'\n\njobs:\n  sync:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - uses: micnncim/action-label-syncer@v1\n      with:\n        manifest: .github/labels.yml\n      env:\n        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}",
+    "tags": [
+      "labels",
+      "sync",
+      "automation",
+      "maintenance"
+    ]
+  },
+  {
+    "id": "branch-protection",
+    "name": "Check Branch Protection",
+    "category": "Custom",
+    "description": "Verify branch protection rules",
+    "yaml": "name: Check Branch Protection\n\non:\n  schedule:\n    - cron: '0 0 * * 0'\n  workflow_dispatch:\n\njobs:\n  check:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/github-script@v7\n      with:\n        script: |\n          const { data } = await github.rest.repos.getBranchProtection({\n            owner: context.repo.owner,\n            repo: context.repo.repo,\n            branch: 'main'\n          });\n          console.log('Branch protection:', data);",
+    "tags": [
+      "branch",
+      "protection",
+      "security",
+      "check"
+    ]
+  },
+  {
+    "id": "repo-sync",
+    "name": "Sync Repository",
+    "category": "Custom",
+    "description": "Sync fork with upstream",
+    "yaml": "name: Sync Repository\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  sync:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: tgymnich/fork-sync@v1.9\n      with:\n        base: upstream_repo\n        head: your_fork",
+    "tags": [
+      "sync",
+      "fork",
+      "upstream",
+      "automation"
+    ]
+  },
+  {
+    "id": "deno-ci",
+    "name": "Deno CI",
+    "category": "CI/CD",
+    "description": "CI workflow for Deno runtime",
+    "yaml": "name: Deno CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup deno'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "deno",
+      "typescript",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "perl-ci",
+    "name": "Perl CI",
+    "category": "CI/CD",
+    "description": "CI for Perl projects",
+    "yaml": "name: Perl CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup perl'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "perl",
+      "cpan",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "r-ci",
+    "name": "R CI",
+    "category": "CI/CD",
+    "description": "CI for R packages",
+    "yaml": "name: R CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup r'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "r",
+      "cran",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "julia-ci",
+    "name": "Julia CI",
+    "category": "CI/CD",
+    "description": "CI for Julia projects",
+    "yaml": "name: Julia CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup julia'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "julia",
+      "packages",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "clojure-ci",
+    "name": "Clojure CI",
+    "category": "CI/CD",
+    "description": "CI for Clojure projects with Leiningen",
+    "yaml": "name: Clojure CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup clojure'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "clojure",
+      "leiningen",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "erlang-ci",
+    "name": "Erlang CI",
+    "category": "CI/CD",
+    "description": "CI for Erlang projects",
+    "yaml": "name: Erlang CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup erlang'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "erlang",
+      "rebar3",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "crystal-ci",
+    "name": "Crystal CI",
+    "category": "CI/CD",
+    "description": "CI for Crystal language",
+    "yaml": "name: Crystal CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup crystal'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "crystal",
+      "shards",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "nim-ci",
+    "name": "Nim CI",
+    "category": "CI/CD",
+    "description": "CI for Nim projects",
+    "yaml": "name: Nim CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup nim'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "nim",
+      "nimble",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "zig-ci",
+    "name": "Zig CI",
+    "category": "CI/CD",
+    "description": "CI for Zig projects",
+    "yaml": "name: Zig CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup zig'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "zig",
+      "build",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "v-ci",
+    "name": "V CI",
+    "category": "CI/CD",
+    "description": "CI for V language",
+    "yaml": "name: V CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup v'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "v",
+      "vlang",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "dart-ci",
+    "name": "Dart CI",
+    "category": "CI/CD",
+    "description": "CI for standalone Dart",
+    "yaml": "name: Dart CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup dart'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "dart",
+      "pub",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "groovy-ci",
+    "name": "Groovy CI",
+    "category": "CI/CD",
+    "description": "CI for Groovy projects",
+    "yaml": "name: Groovy CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup groovy'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "groovy",
+      "gradle",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "lua-ci",
+    "name": "Lua CI",
+    "category": "CI/CD",
+    "description": "CI for Lua projects",
+    "yaml": "name: Lua CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup lua'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "lua",
+      "luarocks",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "ocaml-ci",
+    "name": "OCaml CI",
+    "category": "CI/CD",
+    "description": "CI for OCaml projects",
+    "yaml": "name: OCaml CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup ocaml'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "ocaml",
+      "opam",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "fsharp-ci",
+    "name": "F# CI",
+    "category": "CI/CD",
+    "description": "CI for F# projects",
+    "yaml": "name: F# CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup fsharp'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "fsharp",
+      "dotnet",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "vb-ci",
+    "name": "VB.NET CI",
+    "category": "CI/CD",
+    "description": "CI for VB.NET projects",
+    "yaml": "name: VB.NET CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup vbnet'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "vbnet",
+      "dotnet",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "pascal-ci",
+    "name": "Pascal CI",
+    "category": "CI/CD",
+    "description": "CI for Pascal/Delphi",
+    "yaml": "name: Pascal CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup pascal'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "pascal",
+      "fpc",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "fortran-ci",
+    "name": "Fortran CI",
+    "category": "CI/CD",
+    "description": "CI for Fortran projects",
+    "yaml": "name: Fortran CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup fortran'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "fortran",
+      "cmake",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "cobol-ci",
+    "name": "COBOL CI",
+    "category": "CI/CD",
+    "description": "CI for COBOL projects",
+    "yaml": "name: COBOL CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup cobol'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "cobol",
+      "gnucobol",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "assembly-ci",
+    "name": "Assembly CI",
+    "category": "CI/CD",
+    "description": "CI for Assembly projects",
+    "yaml": "name: Assembly CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup assembly'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "assembly",
+      "nasm",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "verilog-ci",
+    "name": "Verilog CI",
+    "category": "CI/CD",
+    "description": "CI for Verilog HDL",
+    "yaml": "name: Verilog CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup verilog'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "verilog",
+      "iverilog",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "vhdl-ci",
+    "name": "VHDL CI",
+    "category": "CI/CD",
+    "description": "CI for VHDL projects",
+    "yaml": "name: VHDL CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup vhdl'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "vhdl",
+      "ghdl",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "latex-ci",
+    "name": "LaTeX CI",
+    "category": "CI/CD",
+    "description": "Build LaTeX documents",
+    "yaml": "name: LaTeX CI\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup latex'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "latex",
+      "texlive",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "markdown-ci",
+    "name": "Markdown Lint",
+    "category": "CI/CD",
+    "description": "Lint and validate Markdown",
+    "yaml": "name: Markdown Lint\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup markdown'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "markdown",
+      "markdownlint",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "hugo-build",
+    "name": "Hugo Build",
+    "category": "CI/CD",
+    "description": "Build Hugo static site",
+    "yaml": "name: Hugo Build\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup hugo'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "hugo",
+      "static",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "jekyll-build",
+    "name": "Jekyll Build",
+    "category": "CI/CD",
+    "description": "Build Jekyll site",
+    "yaml": "name: Jekyll Build\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup jekyll'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "jekyll",
+      "ruby",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "gatsby-build",
+    "name": "Gatsby Build",
+    "category": "CI/CD",
+    "description": "Build Gatsby site",
+    "yaml": "name: Gatsby Build\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup gatsby'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "gatsby",
+      "react",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "nextjs-build",
+    "name": "Next.js Build",
+    "category": "CI/CD",
+    "description": "Build Next.js application",
+    "yaml": "name: Next.js Build\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup nextjs'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "nextjs",
+      "react",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "nuxt-build",
+    "name": "Nuxt.js Build",
+    "category": "CI/CD",
+    "description": "Build Nuxt.js application",
+    "yaml": "name: Nuxt.js Build\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup nuxt'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "nuxt",
+      "vue",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "eleventy-build",
+    "name": "11ty Build",
+    "category": "CI/CD",
+    "description": "Build Eleventy static site",
+    "yaml": "name: 11ty Build\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup 11ty'\n    - name: Build\n      run: echo 'Building'\n    - name: Test\n      run: echo 'Testing'",
+    "tags": [
+      "11ty",
+      "javascript",
+      "ci",
+      "build"
+    ]
+  },
+  {
+    "id": "render-deploy",
+    "name": "Deploy to Render",
+    "category": "Deploy",
+    "description": "Deploy to Render platform",
+    "yaml": "name: Deploy to Render\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to render'",
+    "tags": [
+      "render",
+      "hosting",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "railway-deploy",
+    "name": "Deploy to Railway",
+    "category": "Deploy",
+    "description": "Deploy to Railway app",
+    "yaml": "name: Deploy to Railway\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to railway'",
+    "tags": [
+      "railway",
+      "hosting",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "fly-deploy",
+    "name": "Deploy to Fly.io",
+    "category": "Deploy",
+    "description": "Deploy to Fly.io",
+    "yaml": "name: Deploy to Fly.io\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to fly'",
+    "tags": [
+      "fly",
+      "hosting",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "supabase-deploy",
+    "name": "Deploy to Supabase",
+    "category": "Deploy",
+    "description": "Deploy Supabase functions",
+    "yaml": "name: Deploy to Supabase\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to supabase'",
+    "tags": [
+      "supabase",
+      "backend",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "planetscale-deploy",
+    "name": "Deploy to PlanetScale",
+    "category": "Deploy",
+    "description": "Manage PlanetScale database",
+    "yaml": "name: Deploy to PlanetScale\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to planetscale'",
+    "tags": [
+      "planetscale",
+      "database",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "mongodb-atlas-deploy",
+    "name": "Deploy to MongoDB Atlas",
+    "category": "Deploy",
+    "description": "Deploy to MongoDB Atlas",
+    "yaml": "name: Deploy to MongoDB Atlas\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to mongodb'",
+    "tags": [
+      "mongodb",
+      "database",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "redis-deploy",
+    "name": "Deploy to Redis Cloud",
+    "category": "Deploy",
+    "description": "Deploy Redis configuration",
+    "yaml": "name: Deploy to Redis Cloud\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to redis'",
+    "tags": [
+      "redis",
+      "cache",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "kafka-deploy",
+    "name": "Deploy to Kafka",
+    "category": "Deploy",
+    "description": "Deploy Kafka configuration",
+    "yaml": "name: Deploy to Kafka\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to kafka'",
+    "tags": [
+      "kafka",
+      "streaming",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "kubernetes-deploy",
+    "name": "Deploy to Kubernetes",
+    "category": "Deploy",
+    "description": "Deploy to K8s cluster",
+    "yaml": "name: Deploy to Kubernetes\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to kubernetes'",
+    "tags": [
+      "kubernetes",
+      "k8s",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "helm-deploy",
+    "name": "Helm Chart Deploy",
+    "category": "Deploy",
+    "description": "Deploy with Helm charts",
+    "yaml": "name: Helm Chart Deploy\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to helm'",
+    "tags": [
+      "helm",
+      "kubernetes",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "openshift-deploy",
+    "name": "Deploy to OpenShift",
+    "category": "Deploy",
+    "description": "Deploy to OpenShift",
+    "yaml": "name: Deploy to OpenShift\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to openshift'",
+    "tags": [
+      "openshift",
+      "redhat",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "ecs-deploy",
+    "name": "Deploy to AWS ECS",
+    "category": "Deploy",
+    "description": "Deploy to Amazon ECS",
+    "yaml": "name: Deploy to AWS ECS\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to ecs'",
+    "tags": [
+      "ecs",
+      "aws",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "eks-deploy",
+    "name": "Deploy to AWS EKS",
+    "category": "Deploy",
+    "description": "Deploy to Amazon EKS",
+    "yaml": "name: Deploy to AWS EKS\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to eks'",
+    "tags": [
+      "eks",
+      "kubernetes",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "lambda-deploy",
+    "name": "Deploy AWS Lambda",
+    "category": "Deploy",
+    "description": "Deploy serverless Lambda",
+    "yaml": "name: Deploy AWS Lambda\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to lambda'",
+    "tags": [
+      "lambda",
+      "serverless",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "cloudrun-deploy",
+    "name": "Deploy to Cloud Run",
+    "category": "Deploy",
+    "description": "Deploy to Google Cloud Run",
+    "yaml": "name: Deploy to Cloud Run\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to cloudrun'",
+    "tags": [
+      "cloudrun",
+      "google",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "appengine-deploy",
+    "name": "Deploy to App Engine",
+    "category": "Deploy",
+    "description": "Deploy to Google App Engine",
+    "yaml": "name: Deploy to App Engine\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to appengine'",
+    "tags": [
+      "appengine",
+      "google",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "cloud-functions-deploy",
+    "name": "Deploy Cloud Functions",
+    "category": "Deploy",
+    "description": "Deploy GCP Cloud Functions",
+    "yaml": "name: Deploy Cloud Functions\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to functions'",
+    "tags": [
+      "functions",
+      "google",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "azure-functions-deploy",
+    "name": "Deploy Azure Functions",
+    "category": "Deploy",
+    "description": "Deploy Azure Functions",
+    "yaml": "name: Deploy Azure Functions\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to azure-functions'",
+    "tags": [
+      "azure-functions",
+      "microsoft",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "azure-container-deploy",
+    "name": "Deploy Azure Container",
+    "category": "Deploy",
+    "description": "Deploy to Azure Container Instances",
+    "yaml": "name: Deploy Azure Container\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to aci'",
+    "tags": [
+      "aci",
+      "azure",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "azure-aks-deploy",
+    "name": "Deploy to AKS",
+    "category": "Deploy",
+    "description": "Deploy to Azure Kubernetes Service",
+    "yaml": "name: Deploy to AKS\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to aks'",
+    "tags": [
+      "aks",
+      "azure",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "linode-deploy",
+    "name": "Deploy to Linode",
+    "category": "Deploy",
+    "description": "Deploy to Linode server",
+    "yaml": "name: Deploy to Linode\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to linode'",
+    "tags": [
+      "linode",
+      "vps",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "vultr-deploy",
+    "name": "Deploy to Vultr",
+    "category": "Deploy",
+    "description": "Deploy to Vultr VPS",
+    "yaml": "name: Deploy to Vultr\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to vultr'",
+    "tags": [
+      "vultr",
+      "vps",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "scaleway-deploy",
+    "name": "Deploy to Scaleway",
+    "category": "Deploy",
+    "description": "Deploy to Scaleway cloud",
+    "yaml": "name: Deploy to Scaleway\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to scaleway'",
+    "tags": [
+      "scaleway",
+      "cloud",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "ovh-deploy",
+    "name": "Deploy to OVH",
+    "category": "Deploy",
+    "description": "Deploy to OVH cloud",
+    "yaml": "name: Deploy to OVH\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to ovh'",
+    "tags": [
+      "ovh",
+      "cloud",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "github-package-deploy",
+    "name": "Publish GitHub Package",
+    "category": "Deploy",
+    "description": "Publish to GitHub Packages",
+    "yaml": "name: Publish GitHub Package\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to ghcr'",
+    "tags": [
+      "ghcr",
+      "packages",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "gitlab-deploy",
+    "name": "Deploy to GitLab",
+    "category": "Deploy",
+    "description": "Mirror and deploy to GitLab",
+    "yaml": "name: Deploy to GitLab\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to gitlab'",
+    "tags": [
+      "gitlab",
+      "mirror",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "bitbucket-deploy",
+    "name": "Deploy to Bitbucket",
+    "category": "Deploy",
+    "description": "Deploy to Bitbucket Pipelines",
+    "yaml": "name: Deploy to Bitbucket\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to bitbucket'",
+    "tags": [
+      "bitbucket",
+      "pipelines",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "ftp-deploy",
+    "name": "Deploy via FTP",
+    "category": "Deploy",
+    "description": "Deploy files via FTP",
+    "yaml": "name: Deploy via FTP\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to ftp'",
+    "tags": [
+      "ftp",
+      "legacy",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "sftp-deploy",
+    "name": "Deploy via SFTP",
+    "category": "Deploy",
+    "description": "Deploy files via SFTP",
+    "yaml": "name: Deploy via SFTP\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to sftp'",
+    "tags": [
+      "sftp",
+      "ssh",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "rsync-deploy",
+    "name": "Deploy via Rsync",
+    "category": "Deploy",
+    "description": "Deploy using rsync",
+    "yaml": "name: Deploy via Rsync\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Deploy\n      run: echo 'Deploying to rsync'",
+    "tags": [
+      "rsync",
+      "sync",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "vitest-test",
+    "name": "Vitest Testing",
+    "category": "Testing",
+    "description": "Run Vitest unit tests",
+    "yaml": "name: Vitest Testing\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run vitest\n      run: echo 'Running Vitest Testing'",
+    "tags": [
+      "vitest",
+      "vite",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "ava-test",
+    "name": "AVA Testing",
+    "category": "Testing",
+    "description": "Run AVA tests",
+    "yaml": "name: AVA Testing\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run ava\n      run: echo 'Running AVA Testing'",
+    "tags": [
+      "ava",
+      "javascript",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "tape-test",
+    "name": "Tape Testing",
+    "category": "Testing",
+    "description": "Run Tape tests",
+    "yaml": "name: Tape Testing\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run tape\n      run: echo 'Running Tape Testing'",
+    "tags": [
+      "tape",
+      "javascript",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "jasmine-test",
+    "name": "Jasmine Testing",
+    "category": "Testing",
+    "description": "Run Jasmine tests",
+    "yaml": "name: Jasmine Testing\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run jasmine\n      run: echo 'Running Jasmine Testing'",
+    "tags": [
+      "jasmine",
+      "javascript",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "karma-test",
+    "name": "Karma Testing",
+    "category": "Testing",
+    "description": "Run Karma tests",
+    "yaml": "name: Karma Testing\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run karma\n      run: echo 'Running Karma Testing'",
+    "tags": [
+      "karma",
+      "javascript",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "protractor-test",
+    "name": "Protractor E2E",
+    "category": "Testing",
+    "description": "Run Protractor E2E tests",
+    "yaml": "name: Protractor E2E\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run protractor\n      run: echo 'Running Protractor E2E'",
+    "tags": [
+      "protractor",
+      "angular",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "testcafe-test",
+    "name": "TestCafe Testing",
+    "category": "Testing",
+    "description": "Run TestCafe browser tests",
+    "yaml": "name: TestCafe Testing\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run testcafe\n      run: echo 'Running TestCafe Testing'",
+    "tags": [
+      "testcafe",
+      "e2e",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "puppeteer-test",
+    "name": "Puppeteer Testing",
+    "category": "Testing",
+    "description": "Run Puppeteer tests",
+    "yaml": "name: Puppeteer Testing\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run puppeteer\n      run: echo 'Running Puppeteer Testing'",
+    "tags": [
+      "puppeteer",
+      "e2e",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "webdriverio-test",
+    "name": "WebdriverIO Testing",
+    "category": "Testing",
+    "description": "Run WebdriverIO tests",
+    "yaml": "name: WebdriverIO Testing\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run webdriverio\n      run: echo 'Running WebdriverIO Testing'",
+    "tags": [
+      "webdriverio",
+      "e2e",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "nightwatch-test",
+    "name": "Nightwatch Testing",
+    "category": "Testing",
+    "description": "Run Nightwatch E2E tests",
+    "yaml": "name: Nightwatch Testing\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run nightwatch\n      run: echo 'Running Nightwatch Testing'",
+    "tags": [
+      "nightwatch",
+      "e2e",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "cucumber-test",
+    "name": "Cucumber BDD",
+    "category": "Testing",
+    "description": "Run Cucumber BDD tests",
+    "yaml": "name: Cucumber BDD\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run cucumber\n      run: echo 'Running Cucumber BDD'",
+    "tags": [
+      "cucumber",
+      "bdd",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "behave-test",
+    "name": "Behave BDD",
+    "category": "Testing",
+    "description": "Run Python Behave tests",
+    "yaml": "name: Behave BDD\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run behave\n      run: echo 'Running Behave BDD'",
+    "tags": [
+      "behave",
+      "python",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "specflow-test",
+    "name": "SpecFlow Testing",
+    "category": "Testing",
+    "description": "Run SpecFlow tests",
+    "yaml": "name: SpecFlow Testing\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run specflow\n      run: echo 'Running SpecFlow Testing'",
+    "tags": [
+      "specflow",
+      "dotnet",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "junit-test",
+    "name": "JUnit Testing",
+    "category": "Testing",
+    "description": "Run JUnit tests",
+    "yaml": "name: JUnit Testing\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run junit\n      run: echo 'Running JUnit Testing'",
+    "tags": [
+      "junit",
+      "java",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "testng-test",
+    "name": "TestNG Testing",
+    "category": "Testing",
+    "description": "Run TestNG tests",
+    "yaml": "name: TestNG Testing\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run testng\n      run: echo 'Running TestNG Testing'",
+    "tags": [
+      "testng",
+      "java",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "nunit-test",
+    "name": "NUnit Testing",
+    "category": "Testing",
+    "description": "Run NUnit tests",
+    "yaml": "name: NUnit Testing\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run nunit\n      run: echo 'Running NUnit Testing'",
+    "tags": [
+      "nunit",
+      "dotnet",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "xunit-test",
+    "name": "xUnit Testing",
+    "category": "Testing",
+    "description": "Run xUnit tests",
+    "yaml": "name: xUnit Testing\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run xunit\n      run: echo 'Running xUnit Testing'",
+    "tags": [
+      "xunit",
+      "dotnet",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "minitest-test",
+    "name": "Minitest Testing",
+    "category": "Testing",
+    "description": "Run Ruby Minitest",
+    "yaml": "name: Minitest Testing\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run minitest\n      run: echo 'Running Minitest Testing'",
+    "tags": [
+      "minitest",
+      "ruby",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "phpspec-test",
+    "name": "PHPSpec Testing",
+    "category": "Testing",
+    "description": "Run PHPSpec tests",
+    "yaml": "name: PHPSpec Testing\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run phpspec\n      run: echo 'Running PHPSpec Testing'",
+    "tags": [
+      "phpspec",
+      "php",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "behat-test",
+    "name": "Behat BDD",
+    "category": "Testing",
+    "description": "Run Behat BDD tests",
+    "yaml": "name: Behat BDD\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run behat\n      run: echo 'Running Behat BDD'",
+    "tags": [
+      "behat",
+      "php",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "codeception-test",
+    "name": "Codeception Testing",
+    "category": "Testing",
+    "description": "Run Codeception tests",
+    "yaml": "name: Codeception Testing\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run codeception\n      run: echo 'Running Codeception Testing'",
+    "tags": [
+      "codeception",
+      "php",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "go-benchmark",
+    "name": "Go Benchmarks",
+    "category": "Testing",
+    "description": "Run Go benchmarks",
+    "yaml": "name: Go Benchmarks\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run benchmark\n      run: echo 'Running Go Benchmarks'",
+    "tags": [
+      "benchmark",
+      "go",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "rust-bench",
+    "name": "Rust Benchmarks",
+    "category": "Testing",
+    "description": "Run Rust benchmarks",
+    "yaml": "name: Rust Benchmarks\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run bench\n      run: echo 'Running Rust Benchmarks'",
+    "tags": [
+      "bench",
+      "rust",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "jmeter-test",
+    "name": "JMeter Load Test",
+    "category": "Testing",
+    "description": "Run JMeter performance tests",
+    "yaml": "name: JMeter Load Test\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run jmeter\n      run: echo 'Running JMeter Load Test'",
+    "tags": [
+      "jmeter",
+      "performance",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "gatling-test",
+    "name": "Gatling Load Test",
+    "category": "Testing",
+    "description": "Run Gatling load tests",
+    "yaml": "name: Gatling Load Test\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Setup\n      run: echo 'Setup environment'\n    - name: Run gatling\n      run: echo 'Running Gatling Load Test'",
+    "tags": [
+      "gatling",
+      "scala",
+      "testing",
+      "quality"
+    ]
+  },
+  {
+    "id": "goreleaser",
+    "name": "GoReleaser",
+    "category": "Release",
+    "description": "Release Go binaries with GoReleaser",
+    "yaml": "name: GoReleaser\n\non:\n  push:\n    tags:\n      - 'v*'\n\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Build\n      run: echo 'Building release'\n    - name: Release\n      run: echo 'Creating release with go'",
+    "tags": [
+      "go",
+      "binary",
+      "release",
+      "publish"
+    ]
+  },
+  {
+    "id": "electron-builder",
+    "name": "Electron Builder",
+    "category": "Release",
+    "description": "Build and release Electron app",
+    "yaml": "name: Electron Builder\n\non:\n  push:\n    tags:\n      - 'v*'\n\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Build\n      run: echo 'Building release'\n    - name: Release\n      run: echo 'Creating release with electron'",
+    "tags": [
+      "electron",
+      "desktop",
+      "release",
+      "publish"
+    ]
+  },
+  {
+    "id": "pkg-release",
+    "name": "PKG Release",
+    "category": "Release",
+    "description": "Package Node.js app",
+    "yaml": "name: PKG Release\n\non:\n  push:\n    tags:\n      - 'v*'\n\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Build\n      run: echo 'Building release'\n    - name: Release\n      run: echo 'Creating release with pkg'",
+    "tags": [
+      "pkg",
+      "nodejs",
+      "release",
+      "publish"
+    ]
+  },
+  {
+    "id": "pyinstaller-release",
+    "name": "PyInstaller Release",
+    "category": "Release",
+    "description": "Package Python app",
+    "yaml": "name: PyInstaller Release\n\non:\n  push:\n    tags:\n      - 'v*'\n\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Build\n      run: echo 'Building release'\n    - name: Release\n      run: echo 'Creating release with pyinstaller'",
+    "tags": [
+      "pyinstaller",
+      "python",
+      "release",
+      "publish"
+    ]
+  },
+  {
+    "id": "nuitka-release",
+    "name": "Nuitka Release",
+    "category": "Release",
+    "description": "Compile Python with Nuitka",
+    "yaml": "name: Nuitka Release\n\non:\n  push:\n    tags:\n      - 'v*'\n\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Build\n      run: echo 'Building release'\n    - name: Release\n      run: echo 'Creating release with nuitka'",
+    "tags": [
+      "nuitka",
+      "python",
+      "release",
+      "publish"
+    ]
+  },
+  {
+    "id": "cargo-release",
+    "name": "Cargo Release",
+    "category": "Release",
+    "description": "Release Rust crate",
+    "yaml": "name: Cargo Release\n\non:\n  push:\n    tags:\n      - 'v*'\n\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Build\n      run: echo 'Building release'\n    - name: Release\n      run: echo 'Creating release with cargo'",
+    "tags": [
+      "cargo",
+      "rust",
+      "release",
+      "publish"
+    ]
+  },
+  {
+    "id": "maven-release",
+    "name": "Maven Release",
+    "category": "Release",
+    "description": "Release Maven artifact",
+    "yaml": "name: Maven Release\n\non:\n  push:\n    tags:\n      - 'v*'\n\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Build\n      run: echo 'Building release'\n    - name: Release\n      run: echo 'Creating release with maven'",
+    "tags": [
+      "maven",
+      "java",
+      "release",
+      "publish"
+    ]
+  },
+  {
+    "id": "gradle-release",
+    "name": "Gradle Release",
+    "category": "Release",
+    "description": "Release Gradle artifact",
+    "yaml": "name: Gradle Release\n\non:\n  push:\n    tags:\n      - 'v*'\n\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Build\n      run: echo 'Building release'\n    - name: Release\n      run: echo 'Creating release with gradle'",
+    "tags": [
+      "gradle",
+      "java",
+      "release",
+      "publish"
+    ]
+  },
+  {
+    "id": "nuget-release",
+    "name": "NuGet Release",
+    "category": "Release",
+    "description": "Publish NuGet package",
+    "yaml": "name: NuGet Release\n\non:\n  push:\n    tags:\n      - 'v*'\n\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Build\n      run: echo 'Building release'\n    - name: Release\n      run: echo 'Creating release with nuget'",
+    "tags": [
+      "nuget",
+      "dotnet",
+      "release",
+      "publish"
+    ]
+  },
+  {
+    "id": "gem-release",
+    "name": "Gem Release",
+    "category": "Release",
+    "description": "Publish Ruby gem",
+    "yaml": "name: Gem Release\n\non:\n  push:\n    tags:\n      - 'v*'\n\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Build\n      run: echo 'Building release'\n    - name: Release\n      run: echo 'Creating release with gem'",
+    "tags": [
+      "gem",
+      "ruby",
+      "release",
+      "publish"
+    ]
+  },
+  {
+    "id": "composer-release",
+    "name": "Composer Release",
+    "category": "Release",
+    "description": "Publish Composer package",
+    "yaml": "name: Composer Release\n\non:\n  push:\n    tags:\n      - 'v*'\n\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Build\n      run: echo 'Building release'\n    - name: Release\n      run: echo 'Creating release with composer'",
+    "tags": [
+      "composer",
+      "php",
+      "release",
+      "publish"
+    ]
+  },
+  {
+    "id": "snap-release",
+    "name": "Snap Release",
+    "category": "Release",
+    "description": "Publish Snap package",
+    "yaml": "name: Snap Release\n\non:\n  push:\n    tags:\n      - 'v*'\n\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Build\n      run: echo 'Building release'\n    - name: Release\n      run: echo 'Creating release with snap'",
+    "tags": [
+      "snap",
+      "linux",
+      "release",
+      "publish"
+    ]
+  },
+  {
+    "id": "flatpak-release",
+    "name": "Flatpak Release",
+    "category": "Release",
+    "description": "Release Flatpak app",
+    "yaml": "name: Flatpak Release\n\non:\n  push:\n    tags:\n      - 'v*'\n\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Build\n      run: echo 'Building release'\n    - name: Release\n      run: echo 'Creating release with flatpak'",
+    "tags": [
+      "flatpak",
+      "linux",
+      "release",
+      "publish"
+    ]
+  },
+  {
+    "id": "appimage-release",
+    "name": "AppImage Release",
+    "category": "Release",
+    "description": "Build AppImage",
+    "yaml": "name: AppImage Release\n\non:\n  push:\n    tags:\n      - 'v*'\n\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Build\n      run: echo 'Building release'\n    - name: Release\n      run: echo 'Creating release with appimage'",
+    "tags": [
+      "appimage",
+      "linux",
+      "release",
+      "publish"
+    ]
+  },
+  {
+    "id": "chocolatey-release",
+    "name": "Chocolatey Release",
+    "category": "Release",
+    "description": "Publish to Chocolatey",
+    "yaml": "name: Chocolatey Release\n\non:\n  push:\n    tags:\n      - 'v*'\n\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Build\n      run: echo 'Building release'\n    - name: Release\n      run: echo 'Creating release with chocolatey'",
+    "tags": [
+      "chocolatey",
+      "windows",
+      "release",
+      "publish"
+    ]
+  },
+  {
+    "id": "webhook-notify",
+    "name": "Webhook Notification",
+    "category": "Notify",
+    "description": "Send custom webhook",
+    "yaml": "name: Webhook Notification\n\non:\n  push:\n    branches: [ main ]\n  workflow_run:\n    workflows: [\"CI\"]\n    types: [completed]\n\njobs:\n  notify:\n    runs-on: ubuntu-latest\n    steps:\n    - name: Send notification\n      run: echo 'Sending notification via webhook'",
+    "tags": [
+      "webhook",
+      "http",
+      "notification",
+      "alert"
+    ]
+  },
+  {
+    "id": "pagerduty-notify",
+    "name": "PagerDuty Alert",
+    "category": "Notify",
+    "description": "Create PagerDuty incident",
+    "yaml": "name: PagerDuty Alert\n\non:\n  push:\n    branches: [ main ]\n  workflow_run:\n    workflows: [\"CI\"]\n    types: [completed]\n\njobs:\n  notify:\n    runs-on: ubuntu-latest\n    steps:\n    - name: Send notification\n      run: echo 'Sending notification via pagerduty'",
+    "tags": [
+      "pagerduty",
+      "alert",
+      "notification",
+      "alert"
+    ]
+  },
+  {
+    "id": "opsgenie-notify",
+    "name": "Opsgenie Alert",
+    "category": "Notify",
+    "description": "Send Opsgenie alert",
+    "yaml": "name: Opsgenie Alert\n\non:\n  push:\n    branches: [ main ]\n  workflow_run:\n    workflows: [\"CI\"]\n    types: [completed]\n\njobs:\n  notify:\n    runs-on: ubuntu-latest\n    steps:\n    - name: Send notification\n      run: echo 'Sending notification via opsgenie'",
+    "tags": [
+      "opsgenie",
+      "alert",
+      "notification",
+      "alert"
+    ]
+  },
+  {
+    "id": "datadog-notify",
+    "name": "Datadog Event",
+    "category": "Notify",
+    "description": "Send event to Datadog",
+    "yaml": "name: Datadog Event\n\non:\n  push:\n    branches: [ main ]\n  workflow_run:\n    workflows: [\"CI\"]\n    types: [completed]\n\njobs:\n  notify:\n    runs-on: ubuntu-latest\n    steps:\n    - name: Send notification\n      run: echo 'Sending notification via datadog'",
+    "tags": [
+      "datadog",
+      "monitoring",
+      "notification",
+      "alert"
+    ]
+  },
+  {
+    "id": "newrelic-notify",
+    "name": "New Relic Event",
+    "category": "Notify",
+    "description": "Send event to New Relic",
+    "yaml": "name: New Relic Event\n\non:\n  push:\n    branches: [ main ]\n  workflow_run:\n    workflows: [\"CI\"]\n    types: [completed]\n\njobs:\n  notify:\n    runs-on: ubuntu-latest\n    steps:\n    - name: Send notification\n      run: echo 'Sending notification via newrelic'",
+    "tags": [
+      "newrelic",
+      "monitoring",
+      "notification",
+      "alert"
+    ]
+  },
+  {
+    "id": "sentry-notify",
+    "name": "Sentry Release",
+    "category": "Notify",
+    "description": "Create Sentry release",
+    "yaml": "name: Sentry Release\n\non:\n  push:\n    branches: [ main ]\n  workflow_run:\n    workflows: [\"CI\"]\n    types: [completed]\n\njobs:\n  notify:\n    runs-on: ubuntu-latest\n    steps:\n    - name: Send notification\n      run: echo 'Sending notification via sentry'",
+    "tags": [
+      "sentry",
+      "error-tracking",
+      "notification",
+      "alert"
+    ]
+  },
+  {
+    "id": "rollbar-notify",
+    "name": "Rollbar Deploy",
+    "category": "Notify",
+    "description": "Notify Rollbar of deployment",
+    "yaml": "name: Rollbar Deploy\n\non:\n  push:\n    branches: [ main ]\n  workflow_run:\n    workflows: [\"CI\"]\n    types: [completed]\n\njobs:\n  notify:\n    runs-on: ubuntu-latest\n    steps:\n    - name: Send notification\n      run: echo 'Sending notification via rollbar'",
+    "tags": [
+      "rollbar",
+      "error-tracking",
+      "notification",
+      "alert"
+    ]
+  },
+  {
+    "id": "bugsnag-notify",
+    "name": "Bugsnag Release",
+    "category": "Notify",
+    "description": "Create Bugsnag release",
+    "yaml": "name: Bugsnag Release\n\non:\n  push:\n    branches: [ main ]\n  workflow_run:\n    workflows: [\"CI\"]\n    types: [completed]\n\njobs:\n  notify:\n    runs-on: ubuntu-latest\n    steps:\n    - name: Send notification\n      run: echo 'Sending notification via bugsnag'",
+    "tags": [
+      "bugsnag",
+      "error-tracking",
+      "notification",
+      "alert"
+    ]
+  },
+  {
+    "id": "honeybadger-notify",
+    "name": "Honeybadger Deploy",
+    "category": "Notify",
+    "description": "Notify Honeybadger",
+    "yaml": "name: Honeybadger Deploy\n\non:\n  push:\n    branches: [ main ]\n  workflow_run:\n    workflows: [\"CI\"]\n    types: [completed]\n\njobs:\n  notify:\n    runs-on: ubuntu-latest\n    steps:\n    - name: Send notification\n      run: echo 'Sending notification via honeybadger'",
+    "tags": [
+      "honeybadger",
+      "monitoring",
+      "notification",
+      "alert"
+    ]
+  },
+  {
+    "id": "pushover-notify",
+    "name": "Pushover Notification",
+    "category": "Notify",
+    "description": "Send Pushover notification",
+    "yaml": "name: Pushover Notification\n\non:\n  push:\n    branches: [ main ]\n  workflow_run:\n    workflows: [\"CI\"]\n    types: [completed]\n\njobs:\n  notify:\n    runs-on: ubuntu-latest\n    steps:\n    - name: Send notification\n      run: echo 'Sending notification via pushover'",
+    "tags": [
+      "pushover",
+      "mobile",
+      "notification",
+      "alert"
+    ]
+  },
+  {
+    "id": "issue-metrics",
+    "name": "Issue Metrics",
+    "category": "Custom",
+    "description": "Calculate issue metrics",
+    "yaml": "name: Issue Metrics\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Issue Metrics'",
+    "tags": [
+      "metrics",
+      "analytics",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "pr-metrics",
+    "name": "PR Metrics",
+    "category": "Custom",
+    "description": "Calculate PR metrics",
+    "yaml": "name: PR Metrics\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running PR Metrics'",
+    "tags": [
+      "metrics",
+      "analytics",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "contributor-stats",
+    "name": "Contributor Stats",
+    "category": "Custom",
+    "description": "Generate contributor statistics",
+    "yaml": "name: Contributor Stats\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Contributor Stats'",
+    "tags": [
+      "stats",
+      "contributors",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "code-coverage-report",
+    "name": "Coverage Report",
+    "category": "Custom",
+    "description": "Generate coverage report",
+    "yaml": "name: Coverage Report\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Coverage Report'",
+    "tags": [
+      "coverage",
+      "report",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "benchmark-compare",
+    "name": "Compare Benchmarks",
+    "category": "Custom",
+    "description": "Compare performance benchmarks",
+    "yaml": "name: Compare Benchmarks\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Compare Benchmarks'",
+    "tags": [
+      "benchmark",
+      "performance",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "auto-merge-bot",
+    "name": "Auto Merge Bot",
+    "category": "Custom",
+    "description": "Auto merge approved PRs",
+    "yaml": "name: Auto Merge Bot\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Auto Merge Bot'",
+    "tags": [
+      "merge",
+      "automation",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "rebase-bot",
+    "name": "Rebase Bot",
+    "category": "Custom",
+    "description": "Auto rebase PRs",
+    "yaml": "name: Rebase Bot\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Rebase Bot'",
+    "tags": [
+      "rebase",
+      "git",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "backport-pr",
+    "name": "Backport PR",
+    "category": "Custom",
+    "description": "Auto backport PRs",
+    "yaml": "name: Backport PR\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Backport PR'",
+    "tags": [
+      "backport",
+      "maintenance",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "mirror-repo",
+    "name": "Mirror Repository",
+    "category": "Custom",
+    "description": "Mirror repo to another host",
+    "yaml": "name: Mirror Repository\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Mirror Repository'",
+    "tags": [
+      "mirror",
+      "backup",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "backup-issues",
+    "name": "Backup Issues",
+    "category": "Custom",
+    "description": "Export issues to backup",
+    "yaml": "name: Backup Issues\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Backup Issues'",
+    "tags": [
+      "backup",
+      "export",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "import-issues",
+    "name": "Import Issues",
+    "category": "Custom",
+    "description": "Import issues from export",
+    "yaml": "name: Import Issues\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Import Issues'",
+    "tags": [
+      "import",
+      "migration",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "label-sync-multi",
+    "name": "Multi-Repo Label Sync",
+    "category": "Custom",
+    "description": "Sync labels across repos",
+    "yaml": "name: Multi-Repo Label Sync\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Multi-Repo Label Sync'",
+    "tags": [
+      "labels",
+      "sync",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "milestone-automation",
+    "name": "Milestone Automation",
+    "category": "Custom",
+    "description": "Auto manage milestones",
+    "yaml": "name: Milestone Automation\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Milestone Automation'",
+    "tags": [
+      "milestone",
+      "automation",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "project-automation",
+    "name": "Project Board Automation",
+    "category": "Custom",
+    "description": "Automate project boards",
+    "yaml": "name: Project Board Automation\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Project Board Automation'",
+    "tags": [
+      "project",
+      "kanban",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "wiki-sync",
+    "name": "Wiki Sync",
+    "category": "Custom",
+    "description": "Sync wiki to repository",
+    "yaml": "name: Wiki Sync\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Wiki Sync'",
+    "tags": [
+      "wiki",
+      "documentation",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "readme-update",
+    "name": "README Generator",
+    "category": "Custom",
+    "description": "Auto-update README",
+    "yaml": "name: README Generator\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running README Generator'",
+    "tags": [
+      "readme",
+      "docs",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "badge-generator",
+    "name": "Badge Generator",
+    "category": "Custom",
+    "description": "Generate status badges",
+    "yaml": "name: Badge Generator\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Badge Generator'",
+    "tags": [
+      "badges",
+      "status",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "contributors-update",
+    "name": "Contributors List",
+    "category": "Custom",
+    "description": "Update contributors list",
+    "yaml": "name: Contributors List\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Contributors List'",
+    "tags": [
+      "contributors",
+      "all-contributors",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "dependency-review",
+    "name": "Dependency Review",
+    "category": "Custom",
+    "description": "Review dependency changes",
+    "yaml": "name: Dependency Review\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Dependency Review'",
+    "tags": [
+      "dependencies",
+      "security",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "license-check",
+    "name": "License Checker",
+    "category": "Custom",
+    "description": "Check dependency licenses",
+    "yaml": "name: License Checker\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running License Checker'",
+    "tags": [
+      "license",
+      "compliance",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "vulnerability-scan-npm",
+    "name": "NPM Audit",
+    "category": "Custom",
+    "description": "Scan npm dependencies",
+    "yaml": "name: NPM Audit\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running NPM Audit'",
+    "tags": [
+      "npm",
+      "security",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "vulnerability-scan-pip",
+    "name": "Pip Safety Check",
+    "category": "Custom",
+    "description": "Scan pip dependencies",
+    "yaml": "name: Pip Safety Check\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Pip Safety Check'",
+    "tags": [
+      "pip",
+      "security",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "sast-scan",
+    "name": "SAST Security Scan",
+    "category": "Custom",
+    "description": "Static security analysis",
+    "yaml": "name: SAST Security Scan\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running SAST Security Scan'",
+    "tags": [
+      "sast",
+      "security",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "dast-scan",
+    "name": "DAST Security Scan",
+    "category": "Custom",
+    "description": "Dynamic security analysis",
+    "yaml": "name: DAST Security Scan\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running DAST Security Scan'",
+    "tags": [
+      "dast",
+      "security",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "container-scan",
+    "name": "Container Security Scan",
+    "category": "Custom",
+    "description": "Scan Docker images",
+    "yaml": "name: Container Security Scan\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Container Security Scan'",
+    "tags": [
+      "container",
+      "security",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "infrastructure-scan",
+    "name": "Infrastructure Scan",
+    "category": "Custom",
+    "description": "Scan IaC for issues",
+    "yaml": "name: Infrastructure Scan\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Infrastructure Scan'",
+    "tags": [
+      "iac",
+      "security",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "compliance-check",
+    "name": "Compliance Check",
+    "category": "Custom",
+    "description": "Check compliance rules",
+    "yaml": "name: Compliance Check\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Compliance Check'",
+    "tags": [
+      "compliance",
+      "audit",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "accessibility-test",
+    "name": "Accessibility Test",
+    "category": "Custom",
+    "description": "Test accessibility",
+    "yaml": "name: Accessibility Test\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Accessibility Test'",
+    "tags": [
+      "a11y",
+      "wcag",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "broken-links",
+    "name": "Check Broken Links",
+    "category": "Custom",
+    "description": "Find broken links",
+    "yaml": "name: Check Broken Links\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Check Broken Links'",
+    "tags": [
+      "links",
+      "validation",
+      "automation",
+      "custom"
+    ]
+  },
+  {
+    "id": "spell-check",
+    "name": "Spell Checker",
+    "category": "Custom",
+    "description": "Check spelling",
+    "yaml": "name: Spell Checker\n\non:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:\n\njobs:\n  automation:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - name: Run automation\n      run: echo 'Running Spell Checker'",
+    "tags": [
+      "spelling",
+      "quality",
+      "automation",
+      "custom"
+    ]
+  }
+]
