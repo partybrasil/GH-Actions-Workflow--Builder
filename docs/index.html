@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎛️ GH-Actions-Workflow-Builder</title>
+    <meta name="description" content="Constructor visual interactivo de workflows para GitHub Actions con más de 200 templates">
+    <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header id="header">
+        <div class="header-content">
+            <h1>🎛️ GH-Actions-Workflow-Builder</h1>
+            <div class="header-controls">
+                <input type="text" id="search" placeholder="🔍 Buscar templates..." aria-label="Buscar templates">
+                <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Toggle menu">☰</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar Categories -->
+        <aside id="sidebar-categories" class="sidebar-categories">
+            <h2>Categorías</h2>
+            <div id="categories-list"></div>
+        </aside>
+
+        <!-- Templates Gallery -->
+        <main id="templates-gallery" class="templates-gallery">
+            <div class="gallery-header">
+                <h2>Templates</h2>
+                <p id="template-count">Cargando templates...</p>
+            </div>
+            <div id="templates-grid" class="templates-grid"></div>
+        </main>
+
+        <!-- Canvas/Playground Container (Hidden by default) -->
+        <div id="canvas-container" class="canvas-container hidden">
+            <!-- Canvas Area -->
+            <section id="canvas" class="canvas">
+                <div class="canvas-header">
+                    <h2>🎨 Lienzo Workflow</h2>
+                    <button id="close-canvas" class="close-btn" aria-label="Cerrar lienzo">✕</button>
+                </div>
+                <div id="workflow-info" class="workflow-info"></div>
+                <div id="jobs-container" class="jobs-container">
+                    <p class="placeholder-text">Selecciona un template para comenzar o arrastra acciones desde el sidebar</p>
+                </div>
+                <div class="preview-section">
+                    <h3>📝 Preview YAML</h3>
+                    <pre id="yaml-preview" class="yaml-preview">// El YAML generado aparecerá aquí</pre>
+                </div>
+            </section>
+
+            <!-- Actions Sidebar -->
+            <aside id="sidebar-actions" class="sidebar-actions">
+                <h3>⚡ Actions Marketplace</h3>
+                <input type="text" id="action-search" placeholder="Buscar actions..." aria-label="Buscar actions">
+                <div id="actions-list" class="actions-list"></div>
+                <div class="export-section">
+                    <h4>Exportar</h4>
+                    <div class="export-btns">
+                        <button id="btn-export" class="btn btn-primary">📥 Export YAML</button>
+                        <button id="btn-copy" class="btn btn-secondary">📋 Copy</button>
+                        <button id="btn-validate" class="btn btn-success">✅ Validate</button>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden"></div>
+
+    <!-- Scripts -->
+    <script src="assets/js/app.js"></script>
+</body>
+</html>
