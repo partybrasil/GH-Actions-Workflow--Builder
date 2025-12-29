@@ -62,12 +62,16 @@ async function initializeApp() {
 async function loadTemplates() {
     try {
         const response = await fetch('data/templates.json');
-        if (!response.ok) throw new Error('Failed to load templates');
+        if (!response.ok) {
+            throw new Error(`Failed to load templates: ${response.status} ${response.statusText}`);
+        }
         state.templates = await response.json();
         state.filteredTemplates = state.templates;
         return state.templates;
     } catch (error) {
         console.error('Error loading templates:', error);
+        // Show specific error message to user
+        showToast(`Error cargando templates: ${error.message}. Por favor, recarga la página.`, 'error');
         // Fallback to empty array if fetch fails
         state.templates = [];
         state.filteredTemplates = [];
@@ -209,7 +213,13 @@ function loadToCanvas(templateId) {
     }
 }
 
-// Parse YAML (simple parser for display)
+// Parse YAML (simple parser for display - has limitations)
+// NOTE: This is a basic YAML parser for visualization purposes only.
+// Limitations:
+// - Does not handle complex indentation or nested structures
+// - May not correctly parse all YAML features (anchors, references, multi-line strings)
+// - Only extracts basic workflow structure: name, on, jobs, and steps
+// - Use for display purposes only, not for YAML generation or validation
 function parseYAMLSimple(yamlText) {
     const lines = yamlText.split('\n');
     const result = {
@@ -220,6 +230,7 @@ function parseYAMLSimple(yamlText) {
     
     let currentJob = null;
     let currentSteps = [];
+    let inJobsSection = false;
     
     lines.forEach(line => {
         const trimmed = line.trim();
@@ -228,7 +239,10 @@ function parseYAMLSimple(yamlText) {
             result.name = trimmed.substring(5).trim();
         } else if (trimmed.startsWith('on:')) {
             result.on = { trigger: 'push/pull_request' };
-        } else if (trimmed.match(/^[a-zA-Z_]+:$/) && !trimmed.includes('steps')) {
+        } else if (trimmed === 'jobs:') {
+            inJobsSection = true;
+        } else if (inJobsSection && trimmed.match(/^[a-zA-Z_][a-zA-Z0-9_-]*:$/) && !trimmed.includes('steps')) {
+            // Save previous job if exists
             if (currentJob && currentSteps.length > 0) {
                 result.jobs[currentJob] = { steps: currentSteps };
             }
@@ -242,6 +256,7 @@ function parseYAMLSimple(yamlText) {
         }
     });
     
+    // Save last job
     if (currentJob && currentSteps.length > 0) {
         result.jobs[currentJob] = { steps: currentSteps };
     }
@@ -301,7 +316,7 @@ function renderActions() {
     const actionsList = document.getElementById('actions-list');
     
     actionsList.innerHTML = popularActions.map(action => `
-        <div class="action-item" draggable="true" data-action="${action.name}">
+        <div class="action-item" data-action="${action.name}">
             <h4>${action.name}</h4>
             <p>${action.description}</p>
         </div>
@@ -415,14 +430,16 @@ function validateWorkflow() {
     if (issues.length === 0) {
         showToast('✓ Workflow válido según validación básica', 'success');
     } else {
-        showToast(`⚠ Problemas encontrados:\n${issues.join('\n')}`, 'error');
+        // Create HTML list for better formatting
+        const issuesList = issues.map(issue => `• ${issue}`).join('<br>');
+        showToast(`⚠ Problemas encontrados:<br><br>${issuesList}`, 'error');
     }
 }
 
 // Show Toast Notification
 function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
-    toast.textContent = message;
+    toast.innerHTML = message; // Use innerHTML to support HTML formatting like <br> tags
     toast.className = `toast ${type}`;
     toast.classList.remove('hidden');
     

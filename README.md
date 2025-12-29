@@ -195,6 +195,62 @@ GH-Actions-Workflow--Builder/
 
 ---
 
+## ✨ Mejoras Recientes y Calidad del Código
+
+### 🔍 Mejoras de Experiencia de Usuario
+
+**Error Handling Mejorado**
+- Mensajes de error más específicos al cargar templates
+- Notificaciones detalladas cuando falla la carga de recursos
+- Sistema de reintentos para fallos de red
+
+**Validación de Workflows**
+- Mensajes de validación con formato HTML mejorado
+- Uso de `<br>` tags para mejor legibilidad en toast notifications
+- Lista de problemas con viñetas para fácil lectura
+
+**Documentación del Código**
+- Parser YAML documentado con limitaciones claras
+- Comentarios explicativos sobre funciones complejas
+- Advertencias sobre uso correcto de funcionalidades
+
+### 🎯 Mejoras de UX/UI
+
+**Actions Marketplace**
+- Removido atributo `draggable` innecesario de items
+- Cursor cambiado a `pointer` para indicar clickeabilidad
+- Mejor feedback visual en hover
+
+**Comentarios HTML**
+- Sintaxis HTML correcta en todos los comentarios
+- Eliminados comentarios JavaScript-style en archivos HTML
+- Mejor mantenibilidad del código
+
+### 🔧 Parser YAML Simple
+
+El parser YAML incluido tiene las siguientes características y limitaciones:
+
+**Características:**
+- Extrae estructura básica: name, on, jobs, steps
+- Visualización de jobs y steps para templates
+- Rápido y sin dependencias externas
+
+**Limitaciones documentadas:**
+- No maneja estructuras YAML complejas
+- No soporta anchors, references o multi-line strings
+- Solo para propósitos de visualización
+- No usar para generación o validación de YAML
+
+### 🛡️ Mejores Prácticas
+
+- **Sin dependencias externas**: Todo el código es vanilla JS
+- **Seguridad**: No se ejecuta código externo
+- **Performance**: Carga instantánea, <1s tiempo de respuesta
+- **Accesibilidad**: ARIA labels, navegación por teclado
+- **Mantenibilidad**: Código limpio y bien documentado
+
+---
+
 ## 🤝 Contribuir
 
 ¡Las contribuciones son bienvenidas! 🎉

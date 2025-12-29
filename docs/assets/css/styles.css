@@ -390,7 +390,7 @@ body {
     padding: 0.75rem;
     margin-bottom: 0.5rem;
     border-radius: 6px;
-    cursor: move;
+    cursor: pointer;
     transition: background 0.2s;
 }
 
