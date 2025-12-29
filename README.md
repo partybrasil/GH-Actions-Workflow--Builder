@@ -181,13 +181,13 @@ git push
 GH-Actions-Workflow--Builder/
 ├── docs/                      # GitHub Pages root
 │   ├── index.html             # Aplicación principal
+│   ├── data/
+│   │   └── templates.json     # 210+ workflow templates
 │   └── assets/
 │       ├── css/
 │       │   └── styles.css     # Estilos responsive
 │       └── js/
 │           └── app.js         # Lógica de la aplicación
-├── data/
-│   └── templates.json         # 210+ workflow templates
 ├── .gitignore
 ├── LICENSE (MIT)
 └── README.md

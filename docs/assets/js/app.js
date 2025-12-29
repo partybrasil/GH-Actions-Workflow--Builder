@@ -61,7 +61,7 @@ async function initializeApp() {
 // Load Templates from JSON
 async function loadTemplates() {
     try {
-        const response = await fetch('../data/templates.json');
+        const response = await fetch('data/templates.json');
         if (!response.ok) throw new Error('Failed to load templates');
         state.templates = await response.json();
         state.filteredTemplates = state.templates;
